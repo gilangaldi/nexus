@@ -12,4 +12,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Required for self-hosted deploys (Vercel, Netlify, etc.). Without this, Lovable's
+  // vite-tanstack-config skips the Nitro plugin outside its sandbox and the build only
+  // emits static client assets — Vercel then serves 404 because no server handler exists.
+  nitro: {
+    preset: "vercel",
+  },
 });
