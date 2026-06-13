@@ -1,0 +1,1 @@
+ALTER TABLE public.assets ADD CONSTRAINT assets_seller_profile_fkey FOREIGN KEY (seller_id) REFERENCES public.profiles(id) ON DELETE CASCADE;

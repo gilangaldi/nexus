@@ -1,0 +1,131 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* NEXUS Design System — premium dark marketplace */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --radius: 0.75rem;
+
+  /* Dark mode is the default */
+  --background: oklch(0.18 0.03 264);
+  --foreground: oklch(0.985 0.005 247);
+  --surface: oklch(0.22 0.03 264);
+  --surface-elevated: oklch(0.26 0.03 264);
+
+  --card: oklch(0.22 0.03 264);
+  --card-foreground: oklch(0.985 0.005 247);
+  --popover: oklch(0.22 0.03 264);
+  --popover-foreground: oklch(0.985 0.005 247);
+
+  /* #3B82F6 → oklch */
+  --primary: oklch(0.65 0.18 256);
+  --primary-foreground: oklch(0.985 0.005 247);
+  /* #EC4899 → oklch */
+  --accent: oklch(0.68 0.22 0);
+  --accent-foreground: oklch(0.985 0.005 247);
+
+  --secondary: oklch(0.28 0.03 264);
+  --secondary-foreground: oklch(0.985 0.005 247);
+  --muted: oklch(0.26 0.03 264);
+  --muted-foreground: oklch(0.7 0.02 256);
+
+  --destructive: oklch(0.62 0.22 27);
+  --destructive-foreground: oklch(0.985 0.005 247);
+
+  --border: oklch(0.3 0.025 260 / 60%);
+  --input: oklch(0.3 0.025 260 / 70%);
+  --ring: oklch(0.65 0.18 256);
+
+  --gradient-primary: linear-gradient(135deg, oklch(0.65 0.18 256), oklch(0.68 0.22 0));
+  --gradient-subtle: linear-gradient(180deg, oklch(0.22 0.03 264 / 0%), oklch(0.22 0.03 264 / 60%));
+  --gradient-glow: radial-gradient(circle at 50% 0%, oklch(0.65 0.18 256 / 25%), transparent 60%);
+
+  --shadow-glow: 0 0 60px -10px oklch(0.65 0.18 256 / 50%);
+  --shadow-soft: 0 10px 40px -10px oklch(0.1 0.02 264 / 50%);
+  --shadow-card: 0 1px 0 0 oklch(1 0 0 / 4%) inset, 0 1px 2px oklch(0 0 0 / 30%);
+}
+
+html {
+  color-scheme: dark;
+  background-color: var(--background);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01", "ss03";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+}
+
+@utility glass {
+  background-color: oklch(0.22 0.03 264 / 60%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid oklch(1 0 0 / 6%);
+}
+
+@utility gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility grid-bg {
+  background-image:
+    linear-gradient(oklch(1 0 0 / 3%) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(1 0 0 / 3%) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+@utility card-hover {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: oklch(0.65 0.18 256 / 50%);
+  box-shadow: 0 8px 30px -10px oklch(0.65 0.18 256 / 30%);
+}
