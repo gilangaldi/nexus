@@ -1,14 +1,11 @@
 import { createFileRoute, useNavigate, Link, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { Loader2, Mail, Wallet } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
-import { usePhantomWallet } from "@/hooks/use-wallet";
-import { signInWithWallet } from "@/lib/wallet-auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -20,7 +17,7 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — NEXUS" },
-      { name: "description", content: "Sign in to NEXUS with email, Google, or your Solana wallet." },
+      { name: "description", content: "Sign in to NEXUS with email or Google." },
     ],
   }),
   component: AuthPage,
@@ -37,11 +34,11 @@ function AuthPage() {
           NEXUS
         </Link>
         <h1 className="text-2xl font-bold mt-6">Welcome back</h1>
-        <p className="text-sm text-muted-foreground mt-1">Sign in to your account or connect your wallet</p>
+        <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
       </div>
 
       <div className="rounded-xl border border-border/60 bg-card p-6">
-        <SocialAndWallet />
+        <SocialLogin />
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/60" /></div>
           <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">or with email</span></div>
@@ -52,58 +49,31 @@ function AuthPage() {
   );
 }
 
-function SocialAndWallet() {
-  const wallet = usePhantomWallet();
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState<string | null>(null);
+function SocialLogin() {
+  const [busy, setBusy] = useState(false);
 
   async function handleGoogle() {
-    setBusy("google");
+    setBusy(true);
     try {
-      const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-      if (r.error) toast.error(r.error.message ?? "Google sign-in failed");
-      else if (!r.redirected) { toast.success("Signed in"); navigate({ to: "/" }); }
-    } finally { setBusy(null); }
-  }
-
-  async function handlePhantom() {
-    setBusy("phantom");
-    try {
-      if (wallet.installed === false) {
-        window.open("https://phantom.app/download", "_blank", "noopener");
-        throw new Error("Install Phantom wallet dulu, lalu refresh halaman ini.");
-      }
-      const { provider, address } = await wallet.connect();
-      await signInWithWallet(provider, address);
-      toast.success("Login wallet berhasil");
-      navigate({ to: "/" });
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) toast.error(error.message ?? "Google sign-in failed");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Wallet sign-in gagal");
-    } finally { setBusy(null); }
+      toast.error(e instanceof Error ? e.message : "Google sign-in failed");
+    } finally {
+      setBusy(false);
+    }
   }
-
-  const phantomLabel = busy === "phantom"
-    ? "Menghubungkan…"
-    : wallet.installed === false
-      ? "Install Phantom Wallet"
-      : "Sign in with Phantom";
 
   return (
-    <div className="space-y-2">
-      <Button variant="outline" className="w-full justify-center gap-2" onClick={handleGoogle} disabled={!!busy}>
-        {busy === "google" ? <Loader2 className="size-4 animate-spin" /> : <GoogleIcon />}
-        Continue with Google
-      </Button>
-      <Button variant="gradient" className="w-full justify-center gap-2" onClick={handlePhantom} disabled={!!busy || wallet.installed === null}>
-        {busy === "phantom" ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
-        {phantomLabel}
-      </Button>
-      {wallet.installed === false && (
-        <p className="text-xs text-muted-foreground text-center">
-          Phantom belum terinstall. Klik tombol di atas untuk download.
-        </p>
-      )}
-    </div>
+    <Button variant="outline" className="w-full justify-center gap-2" onClick={handleGoogle} disabled={busy}>
+      {busy ? <Loader2 className="size-4 animate-spin" /> : <GoogleIcon />}
+      Continue with Google
+    </Button>
   );
 }
 

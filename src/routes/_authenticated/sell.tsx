@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { randomId } from "@/lib/crypto-polyfill";
@@ -23,10 +27,19 @@ function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) + "-" + Math.random().toString(36).slice(2, 7);
 }
 
+function extractStoragePath(url: string): string | null {
+  const marker = "/storage/v1/object/public/nexus-assets/";
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return decodeURIComponent(url.slice(idx + marker.length));
+}
+
 function Sell() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "", description: "", category_id: "", price_sol: "0.5", tags: "",
   });
@@ -60,18 +73,14 @@ function Sell() {
     if (!thumb) { toast.error("Add a thumbnail image"); return; }
     setBusy(true);
     try {
-      // Ensure 'asset-files' bucket exists; if not, fallback to data URL preview
       const ext = thumb.name.split(".").pop() ?? "jpg";
       const path = `${user!.id}/${randomId()}.${ext}`;
       const { data: up, error: upErr } = await supabase.storage.from("nexus-assets").upload(path, thumb, { cacheControl: "3600", upsert: false });
-      let thumbUrl = "";
       if (upErr) {
-        // Fall back to local object URL if bucket missing
-        thumbUrl = URL.createObjectURL(thumb);
-        console.warn("Storage upload failed, using local URL", upErr);
-      } else {
-        thumbUrl = supabase.storage.from("nexus-assets").getPublicUrl(up.path).data.publicUrl;
+        throw new Error(`Gagal upload gambar: ${upErr.message}. Pastikan bucket "nexus-assets" sudah dibuat di Supabase.`);
       }
+
+      const thumbUrl = supabase.storage.from("nexus-assets").getPublicUrl(up.path).data.publicUrl;
 
       const slug = slugify(form.title);
       const { error } = await supabase.from("assets").insert({
@@ -88,17 +97,38 @@ function Sell() {
       });
       if (error) throw error;
 
-      // Grant seller role if not yet
       await supabase.from("user_roles").upsert({ user_id: user!.id, role: "seller" }, { onConflict: "user_id,role" });
 
       toast.success("Asset published");
       setForm({ title: "", description: "", category_id: "", price_sol: "0.5", tags: "" });
       setThumb(null);
       refetch();
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
       navigate({ to: "/asset/$slug", params: { slug } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to publish");
     } finally { setBusy(false); }
+  }
+
+  async function handleDelete(asset: { id: string; title: string; thumbnail_url: string }) {
+    setDeletingId(asset.id);
+    try {
+      const storagePath = extractStoragePath(asset.thumbnail_url);
+      if (storagePath) {
+        await supabase.storage.from("nexus-assets").remove([storagePath]);
+      }
+
+      const { error } = await supabase.from("assets").delete().eq("id", asset.id);
+      if (error) throw error;
+
+      toast.success(`"${asset.title}" berhasil dihapus`);
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal menghapus asset");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   return (
@@ -152,6 +182,36 @@ function Sell() {
                     <div className="text-xs text-muted-foreground">{a.status} · {a.downloads_count} downloads</div>
                   </div>
                   <div className="font-mono text-sm">{a.price_sol} SOL</div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive shrink-0"
+                        disabled={deletingId === a.id}
+                      >
+                        {deletingId === a.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                        Hapus
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus asset?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Asset &quot;{a.title}&quot; akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => handleDelete(a)}
+                        >
+                          Hapus
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </li>
               ))}
             </ul>

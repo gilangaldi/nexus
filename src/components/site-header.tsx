@@ -39,6 +39,7 @@ export function SiteHeader() {
   }
 
   async function handleSignOut() {
+    await wallet.disconnect();
     await supabase.auth.signOut();
     toast.success("Signed out");
   }
@@ -65,23 +66,25 @@ export function SiteHeader() {
           <nav className="hidden md:flex items-center gap-6">{nav}</nav>
         </div>
         <div className="flex items-center gap-2">
-          {wallet.address ? (
-            <Badge variant="secondary" className="hidden sm:inline-flex gap-1.5 font-mono text-xs h-8 px-3">
-              <Wallet className="size-3" />
-              {shortAddress(wallet.address)}
-              {wallet.balance !== null && <span className="text-muted-foreground">· {wallet.balance.toFixed(2)} SOL</span>}
-            </Badge>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleConnect}
-              disabled={wallet.connecting || wallet.installed === null}
-              className="hidden sm:inline-flex gap-2"
-            >
-              <Wallet className="size-4" />
-              {walletLabel}
-            </Button>
+          {user && (
+            wallet.address ? (
+              <Badge variant="secondary" className="hidden sm:inline-flex gap-1.5 font-mono text-xs h-8 px-3">
+                <Wallet className="size-3" />
+                {shortAddress(wallet.address)}
+                {wallet.balance !== null && <span className="text-muted-foreground">· {wallet.balance.toFixed(2)} SOL</span>}
+              </Badge>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleConnect}
+                disabled={wallet.connecting || wallet.installed === null}
+                className="hidden sm:inline-flex gap-2"
+              >
+                <Wallet className="size-4" />
+                {walletLabel}
+              </Button>
+            )
           )}
 
           {user ? (
@@ -118,7 +121,7 @@ export function SiteHeader() {
       {open && (
         <div className="md:hidden border-t border-border/60 px-4 py-3 flex flex-col gap-3">
           {nav}
-          {!wallet.address && (
+          {user && !wallet.address && (
             <Button
               variant="outline"
               size="sm"

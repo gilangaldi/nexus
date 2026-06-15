@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-DVpe7PXp.js";var t=e(),n=({error:e})=>(0,t.jsxs)(`div`,{className:`container mx-auto px-4 py-20 text-center`,children:[(0,t.jsx)(`h1`,{className:`text-xl font-semibold`,children:`Couldn't load asset`}),(0,t.jsx)(`p`,{className:`text-sm text-muted-foreground mt-2`,children:e.message})]});export{n as errorComponent};
