@@ -6,7 +6,7 @@ import type { Database } from './types';
 // Public anon credentials — safe to embed; RLS protects data on the server.
 const DEFAULT_SUPABASE_URL = "https://vfkivyuvkjptskqobzzq.supabase.co";
 const DEFAULT_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZma2l2eXV2a2pwdHNrcW9ienpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNjMxODMsImV4cCI6MjA5NjgzOTE4M30.D7u8YV1Y5oG1EhAMbm7Xm9uxrOCwoIwGm4oF6efj47Q";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZma2l2eXV2a2pwdHNrcW9ienpxIiwicm9zZSI6ImFub24iLCJpYXQiOjE3ODEyNjMxODMsImV4cCI6MjA5NjgzOTE4M30.D7u8YV1Y5oG1EhAMbm7Xm9uxrOCwoIwGm4oF6efj47Q";
 
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
