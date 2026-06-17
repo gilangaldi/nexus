@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { randomId } from "@/lib/crypto-polyfill";
+import { uploadAssetThumbnail } from "@/lib/api/storage.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sell")({
@@ -25,6 +26,23 @@ export const Route = createFileRoute("/_authenticated/sell")({
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) + "-" + Math.random().toString(36).slice(2, 7);
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        const commaIndex = result.indexOf(",");
+        resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+      } else {
+        reject(new Error("Invalid file data"));
+      }
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 function extractStoragePath(url: string): string | null {
@@ -73,15 +91,17 @@ function Sell() {
     if (!thumb) { toast.error("Add a thumbnail image"); return; }
     setBusy(true);
     try {
-      const ext = thumb.name.split(".").pop() ?? "jpg";
-      const path = `${user!.id}/${randomId()}.${ext}`;
-      const { data: up, error: upErr } = await supabase.storage.from("nexus-assets").upload(path, thumb, { cacheControl: "3600", upsert: false });
-      if (upErr) {
-        throw new Error(`Gagal upload gambar: ${upErr.message}. Pastikan bucket "nexus-assets" sudah dibuat di Supabase.`);
-      }
+      const base64Data = await fileToBase64(thumb);
+      const { publicUrl } = await uploadAssetThumbnail({
+        data: {
+          userId: user!.id,
+          fileName: thumb.name,
+          contentType: thumb.type || "image/jpeg",
+          base64Data,
+        },
+      });
 
-      const thumbUrl = supabase.storage.from("nexus-assets").getPublicUrl(up.path).data.publicUrl;
-
+      const thumbUrl = publicUrl;
       const slug = slugify(form.title);
       const { error } = await supabase.from("assets").insert({
         seller_id: user!.id,

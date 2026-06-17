@@ -61,8 +61,10 @@ function AssetDetail() {
     queryKey: ["seller-wallet", asset?.seller_id],
     enabled: !!asset?.seller_id,
     queryFn: async () => {
-      const { data } = await supabase.from("wallets").select("address").eq("user_id", asset!.seller_id).eq("is_primary", true).maybeSingle();
-      return data?.address ?? null;
+      const { data: primary } = await supabase.from("wallets").select("address").eq("user_id", asset!.seller_id).eq("is_primary", true).maybeSingle();
+      if (primary?.address) return primary.address;
+      const { data: fallback } = await supabase.from("wallets").select("address").eq("user_id", asset!.seller_id).limit(1).maybeSingle();
+      return fallback?.address ?? null;
     },
   });
 
